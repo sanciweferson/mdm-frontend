@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Learning Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="js/layout.js" defer></script>
+    <script src="js/spa.js" defer></script>
+</head>
+<body>
+
+    <nav-bar></nav-bar>
+
+    <main id="app">
+        <section class="hero">
+            <h1>Bem-vindo ao Guia de JavaScript</h1>
+            <p>Selecione um tópico no menu para começar a aprender.</p>
+        </section>
+    </main>
+
+    <footer-bar></footer-bar>
+
+    <script type="module">
+      import { initMenu } from "./js/mobile/menuEvents.js"
+      import { initTheme } from "./js/theme/theme.init.js"
+
+      window.onload = () => {
+        initTheme()
+        initMenu() // agora vai abrir o menu corretamente se estava aberto antes
+      }
+    </script>
+
+</body>
+</html>
