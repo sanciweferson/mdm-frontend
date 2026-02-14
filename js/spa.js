@@ -1,83 +1,111 @@
-let app, homeHTML, paginaAtual = null;
+let app;
+let homeHTML;
+let paginaAtual = null;
 
-function capturarHome() {
+function inicializarSPA() {
   app = document.getElementById("app");
-  homeHTML = app.innerHTML;
+  if (!app) {
+    console.error("❌ ERRO: Elemento #app não encontrado no HTML!");
+    return;
+  }
 
-  // Checa se já iniciamos em uma página específica
-  const urlParams = new URLSearchParams(window.location.search);
-  const rotaInicial = urlParams.get('pagina');
-  if (rotaInicial) carregarPagina(rotaInicial);
+  homeHTML = app.innerHTML;
+  console.log("✅ SPA Inicializado. Conteúdo da Home salvo.");
+
+  const params = new URLSearchParams(window.location.search);
+  const rotaInicial = params.get("pagina");
+
+  if (rotaInicial) {
+    console.log("🚀 Carregando rota inicial:", rotaInicial);
+    carregarPagina(rotaInicial);
+  }
 }
 
-function carregarPagina(pagina) {
+async function carregarPagina(pagina) {
   if (!pagina) return;
 
+  // Caminho absoluto para evitar erro de diretório
   const url = `/partials/pages/${pagina}/index.html`;
+  console.log("📂 Buscando arquivo em:", url);
 
-  fetch(url)
-    .then(res => res.ok ? res.text() : Promise.reject("Página não encontrada"))
-    .then(html => {
-      app.innerHTML = html;
-      window.scrollTo(0, 0);
-      document.title = `JS Docs — ${pagina.split('/').pop()}`;
+  try {
+    const res = await fetch(url);
 
-      carregarScriptDaPagina(pagina);
-      carregarCSSDaPagina(pagina);
-    })
-    .catch(err => {
-      app.innerHTML = `<h2>Erro 404: ${err}</h2>`;
-    });
+    if (!res.ok) {
+      throw new Error(`Servidor respondeu com erro ${res.status} ao buscar ${url}`);
+    }
+
+    const html = await res.text();
+    console.log("📄 HTML recebido com sucesso!");
+
+    // A MÁGICA ACONTECE AQUI
+    app.innerHTML = html;
+    paginaAtual = pagina;
+
+    window.scrollTo(0, 0);
+    document.title = `JS Docs — ${pagina.split('/').pop().toUpperCase()}`;
+
+    gerenciarAssets(pagina);
+    console.log("✨ Conteúdo injetado no #app!");
+
+  } catch (err) {
+    console.error("❌ Erro ao carregar página:", err);
+    app.innerHTML = `
+            <section style="padding: 2rem; text-align: center;">
+                <h2>Erro 404</h2>
+                <p>Não foi possível encontrar a página: <b>${pagina}</b></p>
+                <p><small>${err.message}</small></p>
+            </section>`;
+  }
 }
 
-// Injeção dinâmica de assets (CSS/JS da aula)
-function carregarScriptDaPagina(pagina) {
+function gerenciarAssets(pagina) {
   document.getElementById("script-pagina")?.remove();
-  const script = document.createElement("script");
-  script.src = `/partials/pages/${pagina}/index.js`;
-  script.id = "script-pagina";
-  script.onerror = () => script.remove();
-  document.body.appendChild(script);
-}
-
-function carregarCSSDaPagina(pagina) {
   document.getElementById("css-pagina")?.remove();
+
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = `/partials/pages/${pagina}/index.css`;
   link.id = "css-pagina";
-  link.onerror = () => link.remove();
   document.head.appendChild(link);
+
+  const script = document.createElement("script");
+  script.src = `/partials/pages/${pagina}/index.js`;
+  script.id = "script-pagina";
+  script.defer = true;
+  document.body.appendChild(script);
 }
 
-// Interceptor de cliques
+// O INTERCEPTOR (Escutando no document para pegar links dinâmicos do nav-bar)
 document.addEventListener("click", e => {
-  const link = e.target.closest("a");
+  const link = e.target.closest("a[data-spa]");
   if (!link) return;
-
-  const href = link.getAttribute("href");
-  if (!href || href.startsWith("http")) return;
 
   e.preventDefault();
 
-  if (href.includes("?pagina=")) {
-    const urlParams = new URLSearchParams(href.split('?')[1]);
-    const pagina = urlParams.get("pagina");
-    if (pagina && pagina !== paginaAtual) {
-      paginaAtual = pagina;
-      history.pushState(null, "", `?pagina=${pagina}`);
-      carregarPagina(pagina);
-    }
-  } else if (href === "/") {
-    history.pushState(null, "", "/");
+  const rota = link.dataset.spa;
+
+  if (rota && rota !== paginaAtual) {
+    console.log("🔗 Navegando para:", rota);
+    history.pushState({ pagina: rota }, "", `?pagina = ${ rota }`);
+    carregarPagina(rota);
+  }
+  else if (href === "/" || href === "index.html") {
+    e.preventDefault();
+    window.history.pushState(null, "", "/");
     app.innerHTML = homeHTML;
     paginaAtual = null;
+    document.getElementById("script-pagina")?.remove();
+    document.getElementById("css-pagina")?.remove();
+    console.log("🏠 Voltando para a Home.");
   }
 });
 
 window.addEventListener("popstate", () => {
-  const pagina = new URLSearchParams(location.search).get("pagina");
-  pagina ? carregarPagina(pagina) : (app.innerHTML = homeHTML);
+  const params = new URLSearchParams(window.location.search);
+  const rota = params.get("pagina");
+  rota ? carregarPagina(rota) : (app.innerHTML = homeHTML);
 });
 
-window.addEventListener("DOMContentLoaded", capturarHome);
+// Inicializa
+window.addEventListener("load", inicializarSPA);

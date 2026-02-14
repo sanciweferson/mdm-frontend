@@ -17,9 +17,34 @@ function createToggleMenu() {
   `;
 }
 
+// function createNavItem(item) {
+//   const subPages = item.pages.map(page => {
+//     // ESTA PARTE É VITAL: 
+//     // Limpa o caminho do JSON para virar uma rota amigável
+//     // De: /partials/pages/fundamentos/introducao/index.html
+//     // Para: fundamentos/introducao
+//     const route = page.href
+//       .replace("/partials/pages/", "")
+//       .replace("/index.html", "");
+
+//     return `
+//       <li>
+//         <a href="?pagina=${route}" data-link>
+//           ${page.text}
+//         </a>
+//       </li>
+//     `;
+//   }).join("");
+
+
 function createNavItem(item) {
   const subPages = item.pages.map(page => {
-    return `<li><a href="${page.href}" data-route="${page.href.replace('?pagina=', '')}">${page.text}</a></li>`;
+
+    const route = page.href
+      .replace("/partials/pages/", "")
+      .replace("/index.html", "");
+
+    return `<li><a href="?pagina=${route}">${page.text}</a></li>`;
   }).join("");
 
   return `
@@ -30,6 +55,7 @@ function createNavItem(item) {
   `;
 }
 
+ 
 function createThemeToggle() {
   return `
     <li>
